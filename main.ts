@@ -1,4 +1,5 @@
 // Vice Nights, a gta6-cover-art-01 entry (Node 22, standard library only).
+// v3 (2026-11-19): photo panels now crop around a face-led focal point.
 // v2 restyle (2026-11-19): the app now renders a full-bleed box-art mosaic
 // with black gutters, an overlapping stacked title with an original gradient
 // emblem, an Illustrated posterised grade and code-drawn motif panels. This

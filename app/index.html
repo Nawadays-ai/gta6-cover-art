@@ -25,7 +25,7 @@
 
     <fieldset>
       <legend>2 · Photos</legend>
-      <p class="hint">Pick a panel, then load a photo into it. Drag the preview to move a photo, or use the sliders. Try a sample photo first.</p>
+      <p class="hint">Pick a panel, then load a photo into it. Each panel crops around a focal point — put it on the face and the panel frames it head-and-shoulders, like the box art. Drag the pink focal marker on the preview, drag the photo itself to slide it, or use the focal sliders. Try a sample photo first.</p>
       <div class="row" id="sampleRow">
         <button type="button" data-sample="pier">Sample: Pier</button>
         <button type="button" data-sample="boulevard">Sample: Boulevard</button>
@@ -35,8 +35,8 @@
         <input id="photo" type="file" accept="image/*">
       </label>
       <label>Zoom <input id="zoom" type="range" min="1" max="3" step="0.01" value="1.2"></label>
-      <label>Move left / right <input id="panX" type="range" min="-1" max="1" step="0.01" value="0"></label>
-      <label>Move up / down <input id="panY" type="range" min="-1" max="1" step="0.01" value="0"></label>
+      <label>Focal point left / right <input id="panX" type="range" min="0" max="1" step="0.01" value="0.5"></label>
+      <label>Focal point up / down <input id="panY" type="range" min="0" max="1" step="0.01" value="0.26"></label>
       <div class="row">
         <button type="button" id="fillAll">Use this photo in every panel</button>
         <button type="button" id="clearPanel">Clear panel</button>
@@ -81,7 +81,7 @@
   </section>
   <section class="stage">
     <canvas id="cover" width="1080" height="1080" aria-label="Live cover preview"></canvas>
-    <p class="stage-hint">Drag the cover to move the selected panel's photo.</p>
+    <p class="stage-hint">Drag the pink focal marker to point at the face; drag elsewhere on the cover to slide the selected panel's photo.</p>
   </section>
 </main>
 <script type="module" src="./src/main.js"></script>

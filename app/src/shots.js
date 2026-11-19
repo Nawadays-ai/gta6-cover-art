@@ -1,11 +1,14 @@
-// Fixed scenes for screenshots (v2 box-art restyle): ?shot=editor shows the
-// page with sample photos loaded; ?shot=cover shows a cover alone; ?shot=export
-// shows the actual PNG the app exported, as an image. `photo` picks the sample,
-// `caption` the words, `layout` and `grade` the look, and `empty=2,5` leaves
-// those panel indexes photo-free so their code-drawn motif scenes show in the
-// screenshot. window.__shotReady is set once painted.
+// Fixed scenes for screenshots (v3 face-led focal framing): ?shot=editor
+// shows the page with sample photos loaded; ?shot=cover shows a cover alone;
+// ?shot=export shows the actual PNG the app exported, as an image. `photo`
+// picks the sample, `caption` the words, `layout` and `grade` the look, and
+// `empty=2,5` leaves those panel indexes photo-free so their code-drawn motif
+// scenes show in the screenshot. Every photo panel gets an explicit focal
+// point at the measured face centre of its sample photo (SAMPLE_FOCALS), so
+// the fixed scenes frame faces head-and-shoulders at every export size.
+// window.__shotReady is set once painted.
 import { exportCover, SIZES } from './cover.js';
-import { SAMPLES } from './presets.js';
+import { SAMPLES, SAMPLE_FOCALS } from './presets.js';
 
 function ready() {
   requestAnimationFrame(() => requestAnimationFrame(() => { window.__shotReady = true; }));
@@ -36,10 +39,19 @@ export async function runShot(shot, query, app) {
   const empty = emptySet(query);
   const fillPanels = () => {
     // First panel gets the main photo, the rest alternate — except panels
-    // listed in `empty`, which keep their motif scenery.
+    // listed in `empty`, which keep their motif scenery. Each photo panel
+    // is focal-anchored on its photo's measured face centre (v3), so no
+    // person panel crops at the chest/neck.
+    const mainKey = SAMPLE_FOCALS[query.get('photo')] ? query.get('photo') : 'pier';
+    const altKey = SAMPLE_FOCALS[query.get('photo2')] ? query.get('photo2') : 'boulevard';
     state.panels.forEach((p, i) => {
       if (empty.has(i)) { p.img = null; return; }
-      p.img = i === 0 ? pier : (i % 2 === 0 ? pier : boulevard);
+      // Panel 0 takes `photo`, odd panels take `photo2`, even panels take
+      // `photo` again — and each takes that photo's measured face focal.
+      const key = i % 2 === 1 ? altKey : mainKey;
+      p.img = i % 2 === 1 ? boulevard : pier;
+      p.focalX = SAMPLE_FOCALS[key].x;
+      p.focalY = SAMPLE_FOCALS[key].y;
       p.zoom = 1.25;
     });
   };

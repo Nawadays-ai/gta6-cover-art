@@ -13,6 +13,16 @@ the middle, a sunset-gradient emblem, per-panel hue washes and a posterised
 "illustrated" photo grade. All artwork and lettering remain original and
 drawn in code.
 
+**v3 — face-led focal framing:** photo panels no longer crop around the
+photo's centre (which framed people at the chest). Every panel crops
+around a focal point, following the face-led pattern of the official box
+art: panels without an explicit focal anchor at fx 0.5 with fy 0.26 for
+portrait panels/photos and fy 0.35 for landscape panels (the upper third,
+where faces sit in head-and-shoulders shots). The editor's pan sliders now
+set the focal point directly (0–1 across/down the photo), and the preview
+shows a draggable pink focal marker — point it at the face and the panel
+frames the face at every export size.
+
 ## What it does
 
 - **Box Art layout (default)** — an irregular mosaic of 7 panels in mixed
@@ -42,9 +52,9 @@ drawn in code.
   treatment, code-drawn palm silhouettes framing both sides, and the title
   at the top over the picture.
 - **Any photo** — load photos from your machine into any panel, then crop
-  and position each one: drag the preview, or use the zoom and pan sliders.
-  One photo can fill every panel; a panel can be cleared back to its motif
-  scene.
+  and position each one around its focal point: drag the focal marker or
+  the photo on the preview, or use the zoom and focal sliders. One photo
+  can fill every panel; a panel can be cleared back to its motif scene.
 - **Fast export** — one click exports a PNG in the common post sizes:
   1080 × 1080, 1080 × 1350, or 1920 × 1080.
 

@@ -5,6 +5,39 @@ gaya box art multi-panel dan mengekspor PNG 1080x1080, 1080x1350, dan
 1920x1080. Repo: Nawadays-ai/gta6-cover-art (belum di-push; submit menunggu
 persetujuan).
 
+## Perbaikan v3 (2026-11-19) — framing focal mengutamakan wajah
+
+Cacat v2: panel foto di-crop di tengah foto, sehingga panel orang jatuh ke
+dada/torso, bukan wajah (box art resmi GTA VI itu face-led: head-and-
+shoulders, wajah besar di atas-tengah panel). Perbaikan:
+
+- **Renderer (cover.js):** crop per panel kini berjangkar pada titik focal
+  (fx, fy) dalam [0,1]² — jendela crop diposisikan agar titik focal jatuh
+  di tengah panel sebisa mungkin, di-clamp ke batas foto. Default bila
+  panel tak punya focal eksplisit: fx 0,5; fy 0,26 untuk panel portrait
+  dan foto portrait (sepertiga atas, posisi wajah), fy 0,35 untuk panel
+  landscape, fy 0,29 untuk panel nyaris persegi.
+- **Editor (main.js + index.html + style.css):** slider pan lama kini
+  mengatur titik focal langsung (rentang 0–1, nilai default di-reset ke
+  default focal di atas); ada penanda focal pink yang BISA DISERET di
+  pratinjau (klik-seret penanda untuk menunjuk wajah; seret di tempat lain
+  menggeser foto dan focal ikut bergerak). Kursor pratinjau crosshair.
+- **Adegan screenshot (shots.js + presets.js):** posisi wajah terukur di
+  foto sampel — pier (0,44; 0,26), boulevard (0,56; 0,19) — dipasang
+  sebagai focal eksplisit tiap panel foto, sehingga di semua ukuran ekspor
+  (1080x1080, 1080x1350, 1920x1080) panel orang membingkai wajah.
+- **Verifikasi visual:** keempat screenshot di-regenerate dari aplikasi
+  yang berjalan dan diperiksa satu per satu — tidak ada lagi panel yang
+  memotong orang di dada/leher; semua wajah terlihat head-and-shoulders
+  (di layout Hero dan pita tengah, judul/emblem tetap menimpa sebagian
+  wajah sesuai desain judul-menimpa-mosaik, tetapi crop-nya kini jatuh ke
+  wajah, bukan leher/bahu seperti v2). Ukuran: 167.280 / 179.957 /
+  233.740 / 171.498 byte, semua <= 256 KiB.
+- **Uji v3:** node --check semua app/src/*.js lolos; main.ts dua kali
+  jalan menghasilkan dossier.json byte-identik (1.070.568 byte,
+  sha256 610a9b7aa1ed500334742c68562bbd962be876518e3f9d97e889fe5da0d4c591),
+  di bawah cap kit 1,5 MiB; tidak ada referensi http/https di app/.
+
 ## Restyle v2 (2026-11-19) — mengikuti pola art resmi GTA VI
 
 Visual dibangun ulang mengikuti POLA komposisi key art / box art resmi
@@ -95,11 +128,12 @@ jalan normal lewat node serve.ts di http://localhost:8080.
 ## Uji yang dijalankan
 
 - MAKEFUN_OUTPUT_DIR=/tmp/out-cover node main.ts — sukses; dossier.json
-  valid (1.011.197 byte; naik dari 712.261 byte di v1 karena screenshot dan
-  kode renderer lebih besar — tetap lolos semua cap kit yang ditegakkan
-  buildDossier), app/ + screenshots/ tersalin lengkap.
+  valid (1.070.568 byte di v3; 1.011.197 byte di v2, 712.261 byte di v1 —
+  tetap lolos semua cap kit yang ditegakkan buildDossier), app/ +
+  screenshots/ tersalin lengkap.
 - main.ts dijalankan dua kali — byte hasil identik (deterministik,
-  sha256 d34a9c3cb11d68d205df32e13b51b873b985ea256af7aa4dcda98750f5801ae7).
+  sha256 v3 610a9b7aa1ed500334742c68562bbd962be876518e3f9d97e889fe5da0d4c591;
+  v2 d34a9c3cb11d68d205df32e13b51b873b985ea256af7aa4dcda98750f5801ae7).
 - Semua berkas .js di app/src lolos node --check.
 - Tidak ada referensi http/https di app/ (semua aset lokal).
 - main.ts memanggil buildDossier dari vendor/makefun-app.ts (salinan kit

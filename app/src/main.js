@@ -1,9 +1,13 @@
-// Wires the Vice Nights editor (v2 box-art restyle): pick a layout — Box Art
-// is the default irregular mosaic — load photos into panels, crop and position
-// each one, write the caption, pick a grade (Illustrated is the default),
+// Wires the Vice Nights editor (v3 face-led focal framing): pick a layout —
+// Box Art is the default irregular mosaic — load photos into panels, set each
+// panel's focal point (the crop anchor; put it on the face for person
+// photos), write the caption, pick a grade (Illustrated is the default),
 // export a PNG. Panels left empty show code-drawn motif scenes instead.
+// The old pan sliders now set the focal point directly (0–1 across/down the
+// photo), and a draggable focal marker is drawn on the preview: drag the
+// marker to move the focal, drag elsewhere on a panel to slide its photo.
 // A `?shot=` query sets up a fixed scene for a screenshot instead (./shots.js).
-import { drawCover, exportCover, getPanels, SIZES } from './cover.js';
+import { drawCover, exportCover, getPanels, cropForPanel, resolveFocal, SIZES } from './cover.js';
 import { LAYOUT_PANEL_COUNT, SAMPLES } from './presets.js';
 import { runShot } from './shots.js';
 
@@ -17,14 +21,20 @@ const zoomInput = document.getElementById('zoom');
 const panXInput = document.getElementById('panX');
 const panYInput = document.getElementById('panY');
 
+// Panel state: focalX/focalY are the crop anchor in [0, 1]² of the photo;
+// null means "use the renderer's face-led default" (portrait fy 0.26,
+// landscape fy 0.35, fx 0.5). New panels start on the default, not centre.
+const blankPanel = () => ({ img: null, zoom: 1.2, focalX: null, focalY: null });
+
 const state = {
   layout: 'boxart',
   grade: 'illustrated',
   title: titleInput.value,
   subtitle: subtitleInput.value,
-  panels: [{ img: null, zoom: 1.2, panX: 0, panY: 0 }],
+  panels: [blankPanel()],
 };
 let selected = 0;
+const shotMode = new URLSearchParams(location.search).get('shot');
 
 /** Loads an image from a URL, resolving once it can be drawn. */
 export function loadImage(url) {
@@ -41,9 +51,22 @@ function panelCount() {
 }
 
 function ensurePanels() {
-  while (state.panels.length < panelCount()) state.panels.push({ img: null, zoom: 1.2, panX: 0, panY: 0 });
+  while (state.panels.length < panelCount()) state.panels.push(blankPanel());
   state.panels.length = panelCount();
   if (selected >= panelCount()) selected = 0;
+}
+
+/** Effective focal of a panel in the current canvas geometry. */
+function effectiveFocal(i) {
+  const p = state.panels[i];
+  const rects = getPanels(state.layout, canvas.width, canvas.height);
+  const r = rects[i];
+  if (!r) return { x: 0.5, y: 0.26 };
+  const pw = r.w * canvas.width;
+  const ph = r.h * canvas.height;
+  const sw = p.img ? (p.img.naturalWidth || p.img.width) : pw;
+  const sh = p.img ? (p.img.naturalHeight || p.img.height) : ph;
+  return resolveFocal(p, pw, ph, sw, sh);
 }
 
 function buildTabs() {
@@ -63,14 +86,55 @@ function selectPanel(i) {
   const p = state.panels[i];
   panelName.textContent = String(i + 1);
   zoomInput.value = String(p.zoom);
-  panXInput.value = String(p.panX);
-  panYInput.value = String(p.panY);
+  // The sliders show the effective focal (explicit or face-led default).
+  const f = effectiveFocal(i);
+  panXInput.value = String(f.x);
+  panYInput.value = String(f.y);
   buildTabs();
 }
 
+/** Draws the draggable focal marker over the selected photo panel. */
+function drawFocalMarker(ctx) {
+  const p = state.panels[selected];
+  if (!p || !p.img) return;
+  const rects = getPanels(state.layout, canvas.width, canvas.height);
+  const r = rects[selected];
+  if (!r) return;
+  const g = canvas.width * 0.012;
+  const px = r.x * canvas.width + g / 2;
+  const py = r.y * canvas.height + g / 2;
+  const pw = r.w * canvas.width - g;
+  const ph = r.h * canvas.height - g;
+  const sw = p.img.naturalWidth || p.img.width;
+  const sh = p.img.naturalHeight || p.img.height;
+  const crop = cropForPanel(p, pw, ph, sw, sh);
+  const mx = px + crop.dx + crop.focal.x * crop.dw;
+  const my = py + crop.dy + crop.focal.y * crop.dh;
+  const rad = Math.max(10, canvas.width * 0.016);
+  ctx.save();
+  ctx.strokeStyle = '#ffffff';
+  ctx.fillStyle = '#ff2e88';
+  ctx.lineWidth = Math.max(2, canvas.width * 0.003);
+  ctx.beginPath(); ctx.arc(mx, my, rad, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(mx - rad * 1.7, my); ctx.lineTo(mx - rad * 0.45, my);
+  ctx.moveTo(mx + rad * 0.45, my); ctx.lineTo(mx + rad * 1.7, my);
+  ctx.moveTo(mx, my - rad * 1.7); ctx.lineTo(mx, my - rad * 0.45);
+  ctx.moveTo(mx, my + rad * 0.45); ctx.lineTo(mx, my + rad * 1.7);
+  ctx.stroke();
+  ctx.restore();
+  return { x: mx, y: my, rad: rad * 2.2 };
+}
+
+let focalMarker = null;
+
 function redraw() {
   ensurePanels();
-  drawCover(canvas.getContext('2d'), state, canvas.width, canvas.height);
+  const ctx = canvas.getContext('2d');
+  drawCover(ctx, state, canvas.width, canvas.height);
+  // The marker is an editor aid only: fixed cover/export scenes draw the
+  // clean cover (the editor screenshot keeps it, showing the focal UI).
+  focalMarker = !shotMode || shotMode === 'editor' ? drawFocalMarker(ctx) : null;
 }
 
 function syncControls() {
@@ -134,20 +198,22 @@ document.getElementById('photo').addEventListener('change', async (e) => {
 });
 
 zoomInput.addEventListener('input', () => { state.panels[selected].zoom = Number(zoomInput.value); redraw(); });
-panXInput.addEventListener('input', () => { state.panels[selected].panX = Number(panXInput.value); redraw(); });
-panYInput.addEventListener('input', () => { state.panels[selected].panY = Number(panYInput.value); redraw(); });
+// The pan sliders now set the focal point itself (0–1 across / down the
+// photo): put the focal on the face and the crop follows it.
+panXInput.addEventListener('input', () => { state.panels[selected].focalX = Number(panXInput.value); redraw(); });
+panYInput.addEventListener('input', () => { state.panels[selected].focalY = Number(panYInput.value); redraw(); });
 
 document.getElementById('fillAll').addEventListener('click', () => {
   const src = state.panels[selected];
   if (!src.img) { status.textContent = 'Load a photo into this panel first.'; return; }
-  state.panels.forEach((p) => { p.img = src.img; p.zoom = src.zoom; p.panX = src.panX; p.panY = src.panY; });
+  state.panels.forEach((p) => { p.img = src.img; p.zoom = src.zoom; p.focalX = src.focalX; p.focalY = src.focalY; });
   status.textContent = 'One photo now fills every panel.';
   syncControls();
   redraw();
 });
 
 document.getElementById('clearPanel').addEventListener('click', () => {
-  state.panels[selected] = { img: null, zoom: 1.2, panX: 0, panY: 0 };
+  state.panels[selected] = blankPanel();
   selectPanel(selected);
   redraw();
 });
@@ -167,7 +233,9 @@ document.querySelectorAll('button[data-size]').forEach((b) => {
   });
 });
 
-// Drag the preview to move the selected panel's photo.
+// Drag the preview: dragging the focal marker moves the focal point to
+// the pointer; dragging anywhere else on a panel slides that panel's
+// photo, which moves its focal the opposite way (the crop follows it).
 let dragging = null;
 function panelRectAt(clientX, clientY) {
   const r = canvas.getBoundingClientRect();
@@ -181,29 +249,83 @@ function panelRectAt(clientX, clientY) {
   }
   return -1;
 }
+
+/** Sets panel i's focal from a pointer position given in canvas pixels. */
+function setFocalFromPoint(i, cx, cy) {
+  const p = state.panels[i];
+  if (!p.img) return;
+  const rects = getPanels(state.layout, canvas.width, canvas.height);
+  const r = rects[i];
+  const g = canvas.width * 0.012;
+  const px = r.x * canvas.width + g / 2;
+  const py = r.y * canvas.height + g / 2;
+  const pw = r.w * canvas.width - g;
+  const ph = r.h * canvas.height - g;
+  const sw = p.img.naturalWidth || p.img.width;
+  const sh = p.img.naturalHeight || p.img.height;
+  const crop = cropForPanel(p, pw, ph, sw, sh);
+  // The pointer marks where the focal should sit in the panel; invert the
+  // crop so the focal is the source point now under the panel's centre —
+  // simplest stable rule: the source point under the pointer becomes the
+  // focal, so the user literally points at the face.
+  const fx = (cx - px - crop.dx) / crop.dw;
+  const fy = (cy - py - crop.dy) / crop.dh;
+  p.focalX = Math.min(1, Math.max(0, fx));
+  p.focalY = Math.min(1, Math.max(0, fy));
+  panXInput.value = String(p.focalX);
+  panYInput.value = String(p.focalY);
+}
+
 canvas.addEventListener('pointerdown', (e) => {
+  const r = canvas.getBoundingClientRect();
+  const cx = (e.clientX - r.left) * (canvas.width / r.width);
+  const cy = (e.clientY - r.top) * (canvas.height / r.height);
+  if (focalMarker && Math.hypot(cx - focalMarker.x, cy - focalMarker.y) <= focalMarker.rad) {
+    dragging = { mode: 'focal' };
+    canvas.setPointerCapture(e.pointerId);
+    return;
+  }
   const i = panelRectAt(e.clientX, e.clientY);
   if (i < 0) return;
   selectPanel(i);
-  dragging = { x: e.clientX, y: e.clientY };
+  dragging = { mode: 'slide', x: e.clientX, y: e.clientY };
   canvas.setPointerCapture(e.pointerId);
 });
 canvas.addEventListener('pointermove', (e) => {
   if (!dragging) return;
   const r = canvas.getBoundingClientRect();
   const p = state.panels[selected];
-  p.panX = Math.max(-1, Math.min(1, p.panX + ((e.clientX - dragging.x) / r.width) * 2));
-  p.panY = Math.max(-1, Math.min(1, p.panY + ((e.clientY - dragging.y) / r.height) * 2));
-  dragging = { x: e.clientX, y: e.clientY };
-  panXInput.value = String(p.panX);
-  panYInput.value = String(p.panY);
+  if (dragging.mode === 'focal') {
+    const cx = (e.clientX - r.left) * (canvas.width / r.width);
+    const cy = (e.clientY - r.top) * (canvas.height / r.height);
+    setFocalFromPoint(selected, cx, cy);
+    redraw();
+    return;
+  }
+  if (!p.img) { dragging = { mode: 'slide', x: e.clientX, y: e.clientY }; return; }
+  // Sliding the photo by (dx, dy) display pixels moves the focal point by
+  // the same distance in the opposite direction, in source fractions.
+  const rects = getPanels(state.layout, canvas.width, canvas.height);
+  const rect = rects[selected];
+  const pw = rect.w * canvas.width;
+  const ph = rect.h * canvas.height;
+  const sw = p.img.naturalWidth || p.img.width;
+  const sh = p.img.naturalHeight || p.img.height;
+  const crop = cropForPanel(p, pw, ph, sw, sh);
+  const f = effectiveFocal(selected);
+  const scaleX = canvas.width / r.width;
+  const scaleY = canvas.height / r.height;
+  p.focalX = Math.min(1, Math.max(0, f.x - ((e.clientX - dragging.x) * scaleX) / crop.dw));
+  p.focalY = Math.min(1, Math.max(0, f.y - ((e.clientY - dragging.y) * scaleY) / crop.dh));
+  dragging = { mode: 'slide', x: e.clientX, y: e.clientY };
+  panXInput.value = String(p.focalX);
+  panYInput.value = String(p.focalY);
   redraw();
 });
 canvas.addEventListener('pointerup', () => { dragging = null; });
 
-const shot = new URLSearchParams(location.search).get('shot');
-if (shot) {
-  runShot(shot, new URLSearchParams(location.search), {
+if (shotMode) {
+  runShot(shotMode, new URLSearchParams(location.search), {
     state, loadImage, redraw, syncControls, selectPanel,
   });
 } else {

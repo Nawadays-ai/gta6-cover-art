@@ -1,5 +1,6 @@
-/* Vice Nights editor (v2 box-art restyle): a black-gutter workbench with a
-   sunset-gradient accent, echoing the covers it makes. */
+/* Vice Nights editor (v3 face-led focal framing): a black-gutter workbench
+   with a sunset-gradient accent, echoing the covers it makes. The preview
+   uses a crosshair cursor because the focal marker is picked on it. */
 html, body { margin: 0; min-height: 100%; background: #0a0614; color: #f5eef7; font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
 .app { display: flex; gap: 28px; align-items: flex-start; justify-content: center; padding: 22px; box-sizing: border-box; }
 .controls { width: 330px; flex: none; display: flex; flex-direction: column; gap: 16px; }
@@ -25,7 +26,7 @@ button[data-size] { background: #ffb347; border-color: #ffb347; color: #1c0f2e; 
 fieldset { min-width: 0; }
 #status { margin: 8px 0 0; color: #7dffce; min-height: 1.2em; }
 .stage { position: sticky; top: 22px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
-#cover { width: min(72vh, 62vw); height: auto; background: #05030a; box-shadow: 0 12px 44px rgba(0, 0, 0, .65), 0 0 0 3px #05030a, 0 0 0 4px #4a2b63; cursor: grab; touch-action: none; }
+#cover { width: min(72vh, 62vw); height: auto; background: #05030a; box-shadow: 0 12px 44px rgba(0, 0, 0, .65), 0 0 0 3px #05030a, 0 0 0 4px #4a2b63; cursor: crosshair; touch-action: none; }
 #cover:active { cursor: grabbing; }
 .stage-hint { margin: 0; color: #8f7ba3; font-size: 13px; }
 body.shot-cover .controls, body.shot-cover .stage-hint { display: none; }

@@ -1,4 +1,4 @@
-// Vice Nights Cover Studio — renderer v2 (box-art restyle).
+// Vice Nights Cover Studio — renderer v3 (face-led focal framing).
 // Draws a full-bleed irregular mosaic with thick black gutters, a huge
 // stacked title overlapping the middle band, an original gradient emblem
 // (the title's initial inside a diamond badge, sunset gradient with palm
@@ -7,8 +7,13 @@
 // The geometry, palette and treatments follow the *patterns* of official
 // GTA VI key art / box art; every shape, letter and scene here is drawn by
 // this file — no game artwork, no logo, no licensed font is used or copied.
+// v3: photo panels are cropped around a per-panel FOCAL POINT (see the
+// focal section below) instead of always around the photo's centre, so a
+// person panel frames the face head-and-shoulders — the face-led pattern
+// of the official box art — rather than landing on the chest/torso.
 // `state` is { layout, grade, title, subtitle,
-// panels: [{ img, zoom, panX, panY }...] } and the cover is drawn at W x H.
+// panels: [{ img, zoom, focalX, focalY }...] } (focalX/focalY may be null,
+// meaning "use the face-led default") and the cover is drawn at W x H.
 
 // Per-panel dominant hues (pattern: every vignette owns one saturated hue).
 export const PANEL_HUES = [
@@ -431,6 +436,69 @@ function processedImage(img) {
 }
 
 /* ------------------------------------------------------------------ */
+/* Focal-point framing (v3)                                            */
+/*                                                                     */
+/* A photo panel's crop is anchored at a focal point (fx, fy) in       */
+/* [0, 1]² of the source photo: the crop window is positioned so the   */
+/* focal point lands at the panel's centre where possible, clamped to  */
+/* the image bounds so the window never shows outside the photo.       */
+/* Panels without an explicit focal use the face-led defaults below —  */
+/* faces in head-and-shoulders shots sit in the upper third, so the    */
+/* default focal is high, not at the photo's centre (the v2 bug: a     */
+/* centre crop of a tall crop window lands on the chest/torso).        */
+/* ------------------------------------------------------------------ */
+
+export const FOCAL_DEFAULTS = {
+  // Portrait-oriented panel or portrait photo: face height, upper third.
+  portrait: { x: 0.5, y: 0.26 },
+  // Landscape panel: a little lower, the window is a wide slice.
+  landscape: { x: 0.5, y: 0.35 },
+  // Near-square panel and photo.
+  square: { x: 0.5, y: 0.29 },
+};
+
+/** Face-led default focal for a panel of pw x ph showing a sw x sh photo. */
+export function defaultFocalFor(pw, ph, sw, sh) {
+  if (ph > pw || sh > sw) return { ...FOCAL_DEFAULTS.portrait };
+  if (pw > ph * 1.15) return { ...FOCAL_DEFAULTS.landscape };
+  return { ...FOCAL_DEFAULTS.square };
+}
+
+const clamp01 = (v) => Math.min(1, Math.max(0, v));
+
+/** The panel's effective focal: its explicit focal, else the default. */
+export function resolveFocal(panel, pw, ph, sw, sh) {
+  const d = defaultFocalFor(pw, ph, sw, sh);
+  if (!panel) return d;
+  return {
+    x: Number.isFinite(panel.focalX) ? clamp01(panel.focalX) : d.x,
+    y: Number.isFinite(panel.focalY) ? clamp01(panel.focalY) : d.y,
+  };
+}
+
+/**
+ * Crop geometry for one photo panel: the scaled draw size (dw, dh) and
+ * the draw offset (dx, dy) relative to the panel's top-left corner, with
+ * the focal point centred where the image bounds allow. Shared by the
+ * renderer and the editor (which draws the focal marker with it).
+ */
+export function cropForPanel(panel, pw, ph, sw, sh) {
+  const zoom = (panel && panel.zoom) || 1;
+  const scale = Math.max(pw / sw, ph / sh) * zoom;
+  const dw = sw * scale;
+  const dh = sh * scale;
+  const f = resolveFocal(panel, pw, ph, sw, sh);
+  const clampAxis = (want, span, size) => Math.min(0, Math.max(size - span, want));
+  return {
+    dw,
+    dh,
+    focal: f,
+    dx: clampAxis(pw / 2 - f.x * dw, dw, pw),
+    dy: clampAxis(ph / 2 - f.y * dh, dh, ph),
+  };
+}
+
+/* ------------------------------------------------------------------ */
 /* Panels                                                              */
 /* ------------------------------------------------------------------ */
 
@@ -467,13 +535,10 @@ function drawPanel(ctx, rect, panel, W, H, grade, panelIndex) {
     const src = grade.illustrated ? processedImage(panel.img) : panel.img;
     const sw = src.naturalWidth || src.width;
     const sh = src.naturalHeight || src.height;
-    const zoom = panel.zoom || 1;
-    const scale = Math.max(pw / sw, ph / sh) * zoom;
-    const dw = sw * scale;
-    const dh = sh * scale;
-    const ox = (panel.panX || 0) * Math.max(0, (dw - pw) / 2);
-    const oy = (panel.panY || 0) * Math.max(0, (dh - ph) / 2);
-    ctx.drawImage(src, px + (pw - dw) / 2 + ox, py + (ph - dh) / 2 + oy, dw, dh);
+    // v3 focal crop: anchor the window on the panel's focal point (the
+    // face for person panels) instead of the photo's centre.
+    const { dw, dh, dx, dy } = cropForPanel(panel, pw, ph, sw, sh);
+    ctx.drawImage(src, px + dx, py + dy, dw, dh);
     // per-panel dominant hue wash — stronger under the Illustrated grade
     ctx.fillStyle = hue.wash;
     ctx.fillRect(px, py, pw, ph);
