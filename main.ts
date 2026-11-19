@@ -1,20 +1,15 @@
-// Vice Nights, a gta6-cover-art-01 entry (Node 22, standard library only).
-// v3 (2026-11-19): photo panels now crop around a face-led focal point.
-// v2 restyle (2026-11-19): the app now renders a full-bleed box-art mosaic
-// with black gutters, an overlapping stacked title with an original gradient
-// emblem, an Illustrated posterised grade and code-drawn motif panels. This
-// file's mechanics are unchanged from v1 — only this note marks the restyle.
-// the app is this directory's app/ folder, plain static files a desktop browser
-// loads offline (app/index.html and its ES modules, no library, no network
-// request), and this program hands it in. It copies app/ and screenshots/ from
-// beside this file to /output and writes /output/dossier.json, the summary the
-// judge reads, with the vendored make.fun library.
+// Vice Nights Cover Studio — entry program for gta6-cover-art-01.
+// The app itself is the static bundle under app/ (open app/index.html in
+// a desktop browser, no network needed). This program hands the entry
+// in: it copies app/ and screenshots/ next to this file into the output
+// directory and writes dossier.json there with the vendored make.fun
+// library, so the scorer can rebuild the exact same bytes and compare.
 //
-// Serve it locally with `node serve.ts`, then open http://localhost:8080.
-// Outside the grader's container, MAKEFUN_OUTPUT_DIR stands in for /output:
 //   mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts
+//
+// MAKEFUN_OUTPUT_DIR stands in for /output outside the grader.
 
-import { cpSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildDossier } from './vendor/makefun-app.ts';
@@ -22,15 +17,28 @@ import { buildDossier } from './vendor/makefun-app.ts';
 const here = fileURLToPath(new URL('.', import.meta.url));
 const out = process.env.MAKEFUN_OUTPUT_DIR ?? '/output';
 
+// A short pre-flight of our own: refuse early, with a readable message,
+// when the screenshots folder drifts outside the gate's shape (3 or 4
+// images, none over 256 KiB) instead of handing in a doomed entry.
+const shotsDir = join(here, 'screenshots');
+const shotNames = existsSync(shotsDir)
+  ? readdirSync(shotsDir).filter((name) => !name.startsWith('.'))
+  : [];
+if (shotNames.length < 3 || shotNames.length > 4) {
+  throw new Error(`screenshots/ must hold 3 or 4 images, found ${shotNames.length}`);
+}
+for (const name of shotNames) {
+  const bytes = statSync(join(shotsDir, name)).size;
+  if (bytes > 262144) throw new Error(`screenshot ${name} is ${bytes} bytes, over the 256 KiB cap`);
+}
+
 mkdirSync(out, { recursive: true });
 cpSync(join(here, 'app'), join(out, 'app'), { recursive: true });
 mkdirSync(join(out, 'screenshots'), { recursive: true });
-if (existsSync(join(here, 'screenshots'))) cpSync(join(here, 'screenshots'), join(out, 'screenshots'), { recursive: true });
+if (existsSync(shotsDir)) cpSync(shotsDir, join(out, 'screenshots'), { recursive: true });
 
-// The scorer's own caps (reference/gate.json): only text_max_bytes shapes the bytes; the others refuse an entry the
-// scorer would refuse (more than 4 screenshots or one over 256 KiB; more than 993 files in app/ or 48 MiB of app
-// files, in all, or a path under app/ over 1000 bytes: app/ counts beside /output's own 1000-entry cap, its
-// screenshots/ and dossier.json).
+// The limits below mirror the scorer's gate so the dossier this writes
+// is the dossier the gate rebuilds from the same files.
 writeFileSync(
   join(out, 'dossier.json'),
   buildDossier(out, {
@@ -41,3 +49,5 @@ writeFileSync(
     app_path_max_bytes: 1000,
   }),
 );
+
+console.log(`handed in: app/ + ${shotNames.length} screenshots -> ${out}`);

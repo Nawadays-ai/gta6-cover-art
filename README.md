@@ -1,97 +1,78 @@
-[![make.fun](https://make.fun/badge/gta6-cover-art-01.svg)](https://make.fun/c/gta6-cover-art-01)
+# Vice Nights Cover Studio
+
+[![make.fun gta6-cover-art-01](https://make.fun/badge/gta6-cover-art-01.svg)](https://make.fun/c/gta6-cover-art-01)
 [![rank](https://make.fun/badge/gta6-cover-art-01/Nawadays-ai/gta6-cover-art/rank.svg)](https://make.fun/c/gta6-cover-art-01)
 [![reward](https://make.fun/badge/gta6-cover-art-01/Nawadays-ai/gta6-cover-art/reward.svg)](https://make.fun/c/gta6-cover-art-01)
 
-# Vice Nights — GTA-style Cover Studio
-
-A web app that turns your photos and a caption into a full-bleed box-art
-mosaic poster, exported as a PNG to share. Built for the make.fun
-`gta6-cover-art-01` bounty. **v2 restyle:** the covers now follow the
-composition patterns of the official GTA VI key art and box art — an
-irregular mosaic with thick black gutters, a huge stacked title overlapping
-the middle, a sunset-gradient emblem, per-panel hue washes and a posterised
-"illustrated" photo grade. All artwork and lettering remain original and
-drawn in code.
-
-**v3 — face-led focal framing:** photo panels no longer crop around the
-photo's centre (which framed people at the chest). Every panel crops
-around a focal point, following the face-led pattern of the official box
-art: panels without an explicit focal anchor at fx 0.5 with fy 0.26 for
-portrait panels/photos and fy 0.35 for landscape panels (the upper third,
-where faces sit in head-and-shoulders shots). The editor's pan sliders now
-set the focal point directly (0–1 across/down the photo), and the preview
-shows a draggable pink focal marker — point it at the face and the panel
-frames the face at every export size.
+An entry for [make.fun's gta6-cover-art-01](https://make.fun/c/gta6-cover-art-01) bounty, from the repository Nawadays-ai/gta6-cover-art.
 
 ## What it does
 
-- **Box Art layout (default)** — an irregular mosaic of 7 panels in mixed
-  sizes and aspect ratios (a couple of edges slightly angled), bleeding to
-  all four edges with thick black gutters (~1% of width) and one larger
-  hero panel. The mosaic adapts its arrangement to portrait, square and
-  wide canvases. Hero (key-art composition), Triptych and Quad layouts are
-  still available, all restyled to full-bleed panels with black gutters.
-- **Stacked title over the art** — your title is set in huge white,
-  extra-bold rounded block letters with a heavy black outline, stacked in
-  2–3 lines across the middle of the mosaic — never in a separate band.
-  Behind it sits an original emblem: a diamond badge filled with a vertical
-  sunset gradient (deep purple → magenta → orange) with palm silhouettes
-  inside it and your title's first initial at its centre (a star badge if
-  the title is empty). The subtitle stays small and subordinate.
-- **Illustrated grade (default)** — photos are posterised, saturation-
-  boosted and duotone-leaning (purple shadows, warm highlights), and every
-  panel gets its own dominant hue wash (teal, hot pink, purple, orange,
-  aqua…), so snapshots read as comic vignettes. The previous grades —
-  Sunset, Neon, Noir and Gold — remain selectable.
-- **Motif panels** — a panel without a photo is not left blank: it is
-  filled with an original flat-vector scene drawn in code, rotating through
-  a helicopter over the skyline, a speedboat with a pink flamingo, a yellow
-  sports car, an alligator in the water, palm silhouettes against a striped
-  sunset, art-deco hotels, and birds over the bay.
-- **Key-art Hero layout** — one full-bleed hero image with a gradient-sky
-  treatment, code-drawn palm silhouettes framing both sides, and the title
-  at the top over the picture.
-- **Any photo** — load photos from your machine into any panel, then crop
-  and position each one around its focal point: drag the focal marker or
-  the photo on the preview, or use the zoom and focal sliders. One photo
-  can fill every panel; a panel can be cleared back to its motif scene.
-- **Fast export** — one click exports a PNG in the common post sizes:
-  1080 × 1080, 1080 × 1350, or 1920 × 1080.
+Vice Nights Cover Studio is a small offline web app that turns your own
+photos and a caption into a multi-panel poster cover in the Vice City
+sunset style, then exports it as a PNG ready to post. Everything happens
+in the browser on your machine: photos are read from local files, never
+uploaded, and the app makes no network requests at all.
 
-## Try it
+Open `app/index.html` in a desktop browser (or run `node serve.ts` and
+visit the local address it prints), load a photo or two, type a title,
+and export.
 
-```sh
-node serve.ts
-```
+## The covers
 
-Then open http://localhost:8080 in desktop Chrome. Everything runs offline:
-the app is plain static files under `app/`, with no network request. Your
-photos are read on your own machine and never uploaded.
+- **Box Art** — an irregular seven-panel mosaic that bleeds to the edges
+  of the canvas over thick black gutters, with a hero panel, mixed
+  aspect ratios and a couple of slightly angled panel edges. It has
+  separate arrangements for portrait/square and landscape canvases.
+- **Hero** — one full-bleed photo under a gradient sky tint, framed by
+  drawn palm silhouettes, with the title at the top.
+- **Triptych** and **Quad** — three- and four-panel full-bleed layouts.
+- The caption is set in heavy white lettering with a black outline,
+  stacked over the middle of the mosaic, above an original diamond
+  emblem (sunset gradient, sun disc, two palms, and the title's first
+  initial), with a small script subtitle.
+- Five colour grades: Illustrated (the default — boosted colour,
+  five-level posterise, purple shadows, warm highlights and a rotating
+  per-panel hue wash), Sunset, Neon, Noir and Gold.
+- Panels without a photo are filled with small drawn scenes — a
+  helicopter over a skyline, a speedboat with a flamingo, a sports car,
+  an alligator, palms over a striped sun, a deco hotel, birds over a
+  bay — so a cover looks finished even before every panel has a photo.
 
-## Original work
+## Controls
 
-The layout *patterns* — mosaic geometry, black gutters, the overlapping
-stacked title, the gradient-emblem idea, per-panel hues and the posterised
-grade — are inspired by the official GTA VI key art and box art. Everything
-actually drawn is original: the emblem is this app's own diamond badge with
-the user's initial (never the game's logo or "VI" mark), the lettering is
-set in system fonts with code-drawn outlines, the motif scenes are drawn
-from scratch in `app/src/cover.js`, and no Rockstar Games artwork, logo,
-character or font is used or copied. The two sample photos under
-`app/samples/` were made with an image model for make.fun and are free to
-use.
+- One file picker per panel, a button that fills every panel with a
+  single photo, and an Empty button per panel.
+- Per panel: zoom (1–3×), pan, and a focal point. The focal point is set
+  with two sliders or by dragging the pink pin on the preview onto the
+  face; the crop then keeps that point at the panel's centre. The pin
+  only exists in the editor and never appears in exports.
+- Title and subtitle text fields, four caption presets, layout and
+  grade pickers, and a preview-size switch.
+- One-click PNG export at 1080 × 1080, 1080 × 1350 and 1920 × 1080.
 
-## Files
+## Layout of this repository
 
-- `app/index.html` — the editor page
-- `app/src/cover.js` — the cover renderer (mosaic, emblem, title, grades, motifs)
-- `app/src/main.js` — editor wiring (photos, crop, captions, export)
-- `app/src/shots.js` — fixed scenes for screenshots (`?shot=`)
-- `app/src/presets.js` — caption presets and layout data
-- `main.ts` — the make.fun entrypoint (Node 22, standard library only)
-- `serve.ts` — tiny static server for local tries
-- `vendor/makefun-app.ts` — the kit's vendored library, unchanged
+- `app/` — the static app (`index.html`, `style.css`, `src/*.js`, plus
+  two sample photos under `app/samples/` that were made for make.fun
+  and are free to use).
+- `main.ts` — the entry program: copies `app/` and `screenshots/` to
+  the output directory and writes `dossier.json` with the vendored
+  library in `vendor/makefun-app.ts`.
+- `serve.ts` — a tiny local static server for previewing the app.
+- `screenshots/` — four captures of the running app, described in
+  `shots.json`.
+- `SUMMARY-gta6-cover-art-01.md` — a short build summary.
 
-## License
+## Tech notes
 
-MIT — see `LICENSE`.
+Plain HTML, CSS and ES modules on a 2D canvas — no dependencies, no
+build step, no fonts or images fetched from anywhere. Photo grading is
+a per-pixel pass (contrast, saturation, posterise, shadow/highlight
+tints) done once per photo and grade, then cached; the focal crop is
+computed from the cached graded image. All artwork, including the
+emblem, the palm silhouettes and the empty-panel scenes, is drawn by
+the code at render time; nothing here uses Rockstar Games logos,
+artwork, characters or fonts.
+
+MIT licensed — see `LICENSE`.

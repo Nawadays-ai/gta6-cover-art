@@ -1,155 +1,42 @@
-# SUMMARY — gta6-cover-art-01: Vice Nights Cover Studio
+# Summary — gta6-cover-art-01 entry "Vice Nights Cover Studio"
 
-Entry: aplikasi web offline yang mengubah foto + caption menjadi cover art
-gaya box art multi-panel dan mengekspor PNG 1080x1080, 1080x1350, dan
-1920x1080. Repo: Nawadays-ai/gta6-cover-art (belum di-push; submit menunggu
-persetujuan).
+## Contents
 
-## Perbaikan v3 (2026-11-19) — framing focal mengutamakan wajah
+- `app/index.html` and `app/style.css` — the editor page and its styling.
+- `app/src/palette.js` — the five grade recipes and the seven-colour wash cycle.
+- `app/src/motifs.js` — seven flat vector scenes for empty panels, plus the shared palm-silhouette painter.
+- `app/src/renderer.js` — panel layouts, gutter maths, the focal crop window, the photo grading pass, the title/emblem/subtitle block, and the top-level cover painter.
+- `app/src/studio.js` — editor state and wiring: panel cards, caption presets, segmented pickers, the draggable focal pin, PNG export, and the `?shot=` scenes used for the screenshots.
+- `app/samples/pier.jpg`, `app/samples/boulevard.jpg` — the kit's sample photos, copied unchanged.
+- `vendor/makefun-app.ts` — the kit's dossier library, copied byte for byte.
+- `main.ts` — the entry program (copies `app/` + `screenshots/`, writes `dossier.json`, with a small pre-flight check on the screenshots folder).
+- `serve.ts` — a pocket static server for local preview.
+- `shots.json` — the four screenshot scenes.
+- `screenshots/` — the four captures listed below.
 
-Cacat v2: panel foto di-crop di tengah foto, sehingga panel orang jatuh ke
-dada/torso, bukan wajah (box art resmi GTA VI itu face-led: head-and-
-shoulders, wajah besar di atas-tengah panel). Perbaikan:
+## Features
 
-- **Renderer (cover.js):** crop per panel kini berjangkar pada titik focal
-  (fx, fy) dalam [0,1]² — jendela crop diposisikan agar titik focal jatuh
-  di tengah panel sebisa mungkin, di-clamp ke batas foto. Default bila
-  panel tak punya focal eksplisit: fx 0,5; fy 0,26 untuk panel portrait
-  dan foto portrait (sepertiga atas, posisi wajah), fy 0,35 untuk panel
-  landscape, fy 0,29 untuk panel nyaris persegi.
-- **Editor (main.js + index.html + style.css):** slider pan lama kini
-  mengatur titik focal langsung (rentang 0–1, nilai default di-reset ke
-  default focal di atas); ada penanda focal pink yang BISA DISERET di
-  pratinjau (klik-seret penanda untuk menunjuk wajah; seret di tempat lain
-  menggeser foto dan focal ikut bergerak). Kursor pratinjau crosshair.
-- **Adegan screenshot (shots.js + presets.js):** posisi wajah terukur di
-  foto sampel — pier (0,44; 0,26), boulevard (0,56; 0,19) — dipasang
-  sebagai focal eksplisit tiap panel foto, sehingga di semua ukuran ekspor
-  (1080x1080, 1080x1350, 1920x1080) panel orang membingkai wajah.
-- **Verifikasi visual:** keempat screenshot di-regenerate dari aplikasi
-  yang berjalan dan diperiksa satu per satu — tidak ada lagi panel yang
-  memotong orang di dada/leher; semua wajah terlihat head-and-shoulders
-  (di layout Hero dan pita tengah, judul/emblem tetap menimpa sebagian
-  wajah sesuai desain judul-menimpa-mosaik, tetapi crop-nya kini jatuh ke
-  wajah, bukan leher/bahu seperti v2). Ukuran: 167.280 / 179.957 /
-  233.740 / 171.498 byte, semua <= 256 KiB.
-- **Uji v3:** node --check semua app/src/*.js lolos; main.ts dua kali
-  jalan menghasilkan dossier.json byte-identik (1.070.568 byte,
-  sha256 610a9b7aa1ed500334742c68562bbd962be876518e3f9d97e889fe5da0d4c591),
-  di bawah cap kit 1,5 MiB; tidak ada referensi http/https di app/.
+- Four full-bleed layouts with black gutters: Box Art (irregular 7-panel mosaic, portrait/square and landscape arrangements, two angled panel edges), Hero (single image, gradient sky tint, palm silhouettes, title at top), Triptych, Quad.
+- Caption: editable title auto-split into 2–3 stacked lines in heavy outlined white lettering overlapping the mosaic's middle band; an original diamond emblem with a sunset gradient, sun disc, palm silhouettes and the title's initial (a star when there is no title); a script subtitle under the emblem (at the poster's foot on Hero covers).
+- Grades: Illustrated (default; saturation/contrast lift, 5-level posterise, purple shadows, warm highlights, per-panel hue wash from a 7-hue palette), Sunset, Neon, Noir, Gold.
+- Focal framing: each panel carries a focal point; the crop window centres it and clamps to the image bounds. Resting focal height is 0.26 for portrait panels or photos, 0.29 for near-square, 0.35 for landscape panels. The focal point is editable by sliders and by dragging a pink pin on the preview (editor only, never exported). Per-panel zoom 1–3× and pan, per-panel photo loading, fill-all-with-one-photo, and per-panel emptying are all in the panel cards.
+- One-click PNG export at 1080×1080, 1080×1350 and 1920×1080. Fully offline; no dependencies; no network strings anywhere under `app/`.
 
-## Restyle v2 (2026-11-19) — mengikuti pola art resmi GTA VI
+## How the screenshots were made
 
-Visual dibangun ulang mengikuti POLA komposisi key art / box art resmi
-GTA VI (dipelajari dari referensi di luar repo; tidak ada aset, logo, font,
-atau karakter Rockstar yang disalin — semua gambar dan huruf digambar kode
-sendiri):
+The app was loaded from `file://` in headless Chromium (driven over the DevTools protocol, with file access allowed) at the scenes named in `shots.json`:
 
-- **Layout "Box Art" (default baru):** mosaik ireguler 5–8 panel (7 panel)
-  full-bleed sampai ke tepi, ukuran dan rasio panel campur (dua tepi sedikit
-  miring/angled), satu panel hero lebih besar, dipisahkan gutter HITAM tebal
-  (±1% lebar canvas), tanpa margin luar / bingkai putih. Mosaik punya dua
-  susunan: portrait/square dan landscape. Layout lama Hero/Triptych/Quad
-  tetap ada, semuanya di-restyle full-bleed + gutter hitam; Hero diarahkan
-  ke komposisi key art satu gambar: foto full-bleed, treatment langit
-  gradien, siluet palem kode membingkai kiri/kanan, judul di atas.
-- **Judul bertumpuk menimpa mosaik:** judul dipecah 2–3 baris, putih,
-  extra-bold rounded, outline hitam tebal, di tengah, MENIMPA pita tengah
-  mosaik — bukan lagi pita judul terpisah. Di belakang/bawahnya ada emblem
-  gradien ORIGINAL: badge belah ketupat (diamond) berisi gradien sunset
-  vertikal (ungu tua → magenta/pink → oranye) dengan siluet palem gelap di
-  dalam gradien dan inisial pertama judul di tengahnya (fallback badge
-  bintang bila judul kosong). Subjudul kecil dan subordinat, tanpa pita.
-- **Grade foto baru "Illustrated" (default):** posterise (kuantisasi 5
-  level per kanal) + boost saturasi/kontras + bayangan condong ungu dan
-  highlight condong hangat, plus wash hue dominan per panel (teal, hot
-  pink, ungu, oranye, aqua, magenta, biru langit) sehingga foto terbaca
-  sebagai vignette komik. Grade lama Sunset, Neon, Noir, Gold tetap bisa
-  dipilih.
-- **Panel kosong = adegan motif vektor datar original** (rotasi per panel):
-  helikopter di atas skyline, speedboat dengan flamingo pink, mobil sport
-  kuning, buaya/aligator di air, siluet palem dengan matahari bergaris,
-  hotel art-deco, dan burung-burung di atas teluk — menggantikan filler
-  sunset polos sebelumnya.
+1. `1-cover.jpg` (1280×720) — the `?shot=wide` scene: the app's own cover painter drawn at the full 1920×1080 export size, Box Art landscape, Illustrated grade, both sample photos placed with the measured face focals (pier fx 0.44 / fy 0.26, boulevard fx 0.56 / fy 0.19), captured and saved as JPEG.
+2. `2-editor.jpg` (1280×800) — the `?shot=editor` scene: the full editor with both sample photos loaded, the focal pin visible on the hero panel's face.
+3. `3-cover.jpg` (1024×1280) — the `?shot=portrait` scene: a Portrait Box Art cover drawn at 1080×1350.
+4. `4-cover.jpg` (1080×1080) — the `?shot=hero` scene: a Square Hero cover drawn at 1080×1080.
 
-## Isi aplikasi (app/, file statis, tanpa jaringan)
+Each capture was converted to JPEG at quality 85; all four are under the 256 KiB cap. Every screenshot was opened and inspected: in each panel that shows a person, the face is framed head-and-shoulders. Getting there took three adjustments, all verified by re-shooting — the wide and portrait scenes' extra photo panels were re-aimed at the measured face focals (they had been torso crops), the caption block was rescaled so the emblem and subtitle stay on-canvas at wide aspect, and the Hero header was rearranged (emblem above the title, tagline at the foot) so the lettering clears the hero photo's face.
 
-- app/index.html + app/style.css — editor: panel kontrol gelap dengan
-  aksen gradien sunset dan tombol terpilih bergradien; pratinjau langsung.
-- app/src/cover.js — renderer cover v2: mosaik Box Art, emblem gradien,
-  judul bertumpuk, grade Illustrated + 4 grade lama, 7 adegan motif, palem
-  dan skyline yang digambar kode.
-- app/src/main.js — wiring editor: pilih layout (default Box Art), muat
-  foto per panel, crop dan posisi (drag pratinjau atau slider zoom/pan),
-  edit judul + subjudul, pilih grade (default Illustrated), ekspor PNG.
-- app/src/presets.js — preset caption (5) dan data layout (Box Art 7 panel).
-- app/src/shots.js — adegan tetap untuk screenshot (?shot=editor/cover/
-  portrait/square/export, kini dengan parameter empty= untuk membiarkan
-  panel tertentu menampilkan motifnya).
-- app/samples/pier.jpg, boulevard.jpg — foto contoh bawaan kit (dibuat
-  dengan image model untuk make.fun, bebas dipakai).
+## Tests run
 
-## Fitur
-
-- 4 layout: Box Art (7 panel), Hero (key art, 3 panel), Triptych (3),
-  Quad (4) — semua full-bleed dengan gutter hitam.
-- Foto apa pun: tiap panel foto sendiri, zoom 1–3x, geser posisi (drag atau
-  slider), satu foto bisa mengisi semua panel, panel bisa dikosongkan
-  kembali ke adegan motif.
-- 5 grade warna: Illustrated (default), Sunset, Neon, Noir, Gold.
-- Judul + subjudul bisa diedit, plus 5 preset caption.
-- Ekspor PNG satu klik: Square 1080x1080, Portrait 1080x1350,
-  Wide 1920x1080. Foto dibaca di mesin sendiri, tidak pernah diunggah.
-
-## Screenshot (asli dari aplikasi yang berjalan)
-
-Diambil dengan Chromium headless 157 (via Playwright) dari aplikasi yang
-berjalan, 4 file JPEG di screenshots/ (semua <= 256 KiB, sisi panjang
-<= 1280, sisi pendek >= 480):
-
-- 1-cover.jpg (1280x720) — PNG hasil ekspor Wide yang sebenarnya lewat
-  jalur ekspor aplikasi: layout Box Art landscape, grade Illustrated,
-  panel 3 dan 6 menampilkan motif mobil sport dan hotel art-deco.
-- 2-editor.jpg (1280x800) — editor dengan layout Box Art + grade
-  Illustrated; panel 5 dan 7 menampilkan motif palem dan burung.
-- 3-cover.jpg (1024x1280) — cover Portrait layout Box Art, grade
-  Illustrated, caption "NEON HEIST"; motif speedboat+flamingo dan buaya.
-- 4-cover.jpg (1080x1080) — cover Square layout Hero (komposisi key art),
-  grade Sunset, caption "OCEAN DRIVE": palem membingkai, judul di atas,
-  emblem inisial "O".
-
-Catatan: Chromium headless di VM ini membutuhkan dua flag kebijakan WebGL
-milik Hatch (--hatch-webgl-allowed-domains-file dan
---hatch-webgl-allowed-domains-sha256) dan tidak bisa memuat
-http://localhost (Local Network Access check); screenshot diambil lewat
-file:// dengan flag --allow-file-access-from-files. Aplikasi sendiri tetap
-jalan normal lewat node serve.ts di http://localhost:8080.
-
-## Uji yang dijalankan
-
-- MAKEFUN_OUTPUT_DIR=/tmp/out-cover node main.ts — sukses; dossier.json
-  valid (1.070.568 byte di v3; 1.011.197 byte di v2, 712.261 byte di v1 —
-  tetap lolos semua cap kit yang ditegakkan buildDossier), app/ +
-  screenshots/ tersalin lengkap.
-- main.ts dijalankan dua kali — byte hasil identik (deterministik,
-  sha256 v3 610a9b7aa1ed500334742c68562bbd962be876518e3f9d97e889fe5da0d4c591;
-  v2 d34a9c3cb11d68d205df32e13b51b873b985ea256af7aa4dcda98750f5801ae7).
-- Semua berkas .js di app/src lolos node --check.
-- Tidak ada referensi http/https di app/ (semua aset lokal).
-- main.ts memanggil buildDossier dari vendor/makefun-app.ts (salinan kit
-  utuh, sha256 14e650adbd6aff7fb760e9bcd7be00dfbe86fb4819afe88dfe23dd0e087e770e).
-
-## Berkas repo
-
-- main.ts, serve.ts, shots.json, README.md (badge make.fun), LICENSE (MIT),
-  .makefun/owner.json (dompet 528VzcgreXtS599EmxZczVbNrPSC3vtnSFHvezPjBccW)
-- app/, screenshots/ (4 JPEG), vendor/makefun-app.ts
-- Perbaikan selama build v1: posisi underline judul yang semula menabrak
-  subjudul di layout Hero/Quad diperbaiki, ditambah scrim gelap di bawah
-  pita judul agar terbaca di atas skyline. (Di v2 underline dan pita judul
-  sudah tidak ada — judul kini bertumpuk menimpa mosaik dengan emblem.)
-- Perbaikan selama restyle v2: emblem awalnya tertutup penuh oleh judul —
-  digeser lebih besar dan lebih ke bawah agar gradien, palem, dan inisial
-  terlihat di bawah tumpukan judul; backdrop langit Hero dihapus agar
-  gutter Hero benar-benar hitam; tab panel editor dibuat wrap agar 7 tab
-  Box Art tidak meluber.
+- `node --check` passes on all four JavaScript modules.
+- `main.ts` run twice with two different `MAKEFUN_OUTPUT_DIR` values: the two `dossier.json` files are byte-identical, and the output trees contain the complete `app/` and `screenshots/`.
+- Text search confirms no `http://` or `https://` strings anywhere under `app/`.
+- Screenshot dimensions and byte sizes checked against the gate's limits (long side ≤ 1280, short side ≥ 480, ≤ 256 KiB each).
+- The app was exercised in the browser for every screenshot scene (wide, editor, portrait, hero), which covers three layouts, the Illustrated grade, sample-photo loading, focal placement and the caption block.
